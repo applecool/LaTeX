@@ -1,0 +1,70 @@
+\documentclass[12pt]{article}
+\usepackage{fullpage}
+\usepackage{pstricks,pst-tree}
+\usepackage{graphicx}
+\pagestyle{empty}
+\makeatletter
+
+\newcount\@Bernoudepth
+\newcount\@Bernoumaxdepth
+
+\newcommand\Bernoutree[8][treemode=D,nodesep=1ex,levelsep=12ex]{%
+  % #2 = depth of tree
+  % #3 = name for success
+  % #4 = name for miss
+  % #5 = probability of a success
+  % #6 = position of  #5
+  % #7 = probability of a miss 
+  % #8 = position of #7
+  \begingroup
+  % initialize  parameters
+  \psset{treemode=D,nodesep=1ex,levelsep=12ex}%
+  \psset{#1}%
+  \@Bernoumaxdepth #2\relax
+  \def\@Reussite{#3}%
+  \def\@Echec{#4}%
+  \def\@probareussite{#5}%
+  \def\@Argreussite{#6}%
+  % if no parameter of position
+  % center position 
+  \ifx\empty\@Argreussite
+    \def\@Argreussite{0.5}%
+  \fi
+  \def\@probaechec{#7}%
+  \def\@Argechec{#8}
+  \ifx\empty\@Argechec
+    \def\@Argechec{0.5}%
+  \fi
+  % First call  (empty root, level 1)
+  \pstree{\TR{}}{\@Bernoutree{1}}
+  \endgroup
+}
+\newcommand\@Bernoutree[1]{%
+  % #1 = recursive depth 
+  % initialize the depth
+  \@Bernoudepth #1\relax
+  \ifnum\@Bernoudepth=\@Bernoumaxdepth
+    % if depth  max is reached
+    % we place the two final nodes
+    \TR{\@Reussite}\taput[tpos=\@Argreussite]{\@probareussite}
+    \TR{\@Echec}\tbput[tpos=\@Argechec]{\@probaechec}
+    % it's finished
+  \else
+    % else we build with a recursive method
+    % the two branches of higher level
+    \advance\@Bernoudepth \@ne
+    \pstree{\TR{\@Reussite}\taput[tpos=\@Argreussite]
+           {\@probareussite}}{\@Bernoutree{\the\@Bernoudepth}}
+    \pstree{\TR{\@Echec}\tbput[tpos=\@Argechec]
+           {\@probaechec}}{\@Bernoutree{\the\@Bernoudepth}}
+  \fi
+}
+\makeatother
+
+\pagestyle{empty}
+
+\begin{document}
+\resizebox{\linewidth}{!}{%
+\Bernoutree[levelsep=18ex,treenodesize=0pt]{9}{$R$}{$E$}{}{}{}{}
+}
+\end{document}  
