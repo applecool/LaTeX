@@ -1,0 +1,123 @@
+\documentclass{article}
+\usepackage{luacode}
+\usepackage{tikz}
+\usetikzlibrary{backgrounds}
+
+\begin{luacode*}
+
+local rand = math.random
+local abs = math.abs
+local pts = {}
+local tstpairs = {}
+
+-- generate the points
+local function genpts(n,x,y)
+    for i = 1,n do
+        pts[i]={}
+        pts[i][1] = rand()*x
+        pts[i][2] = rand()*y
+    end
+end
+
+-- for sorted pairs, check if x-coords overlap
+-- if so, store the pair in table tstpairs
+local function getpairs(t,r)
+    for i = 1,#t do
+        tstpairs[i] = {}
+        for j = 1,#t-i do
+            if t[i+j][1]-t[i][1]<2*r then
+                tstpairs[i][#tstpairs[i]+1]=i+j
+            else
+                break
+            end
+        end
+    end
+end
+
+-- this is the actual collision test
+-- it's less expensive to use x^2+y^2<d^2 than sqrt(x^2+y^2)<d
+local function testcol(a,b,r)
+    local x = pts[b][1]-pts[a][1]
+    local y = pts[b][2]-pts[a][2]
+    if x*x+y*y<4*r*r then
+        return true
+    end
+end
+
+-- this is a bit of a mess, deleting pairs on the fly was causing some
+-- problems, so I had to include some checks "if pts[k1]..." etc.
+local function delpairs(r)
+    for k1,v1 in pairs(tstpairs) do
+        if pts[k1] then
+            for k2,v2 in pairs(v1) do
+                if pts[v2] then
+                    if abs(pts[v2][2]-pts[k1][2])<2*r then
+                        if testcol(k1,v2,r) then
+                            pts[v2]=nil
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- quickSort helper
+local function partition(array, p, r)
+    local x = array[r][1]
+    local i = p - 1
+    for j = p, r - 1 do
+        if array[j][1] <= x then
+            i = i + 1
+            local temp = array[i][1]
+            array[i][1] = array[j][1]
+            array[j][1] = temp
+        end
+    end
+    local temp = array[i + 1][1]
+    array[i + 1][1] = array[r][1]
+    array[r][1] = temp
+    return i + 1
+end
+
+-- quickSort to sort by x
+-- taken from https://github.com/akosma/CodeaSort/blob/master/QuickSort.lua
+local function quickSort(array, p, r)
+    p = p or 1
+    r = r or #array
+    if p < r then
+        q = partition(array, p, r)
+        quickSort(array, p, q - 1)
+        quickSort(array, q + 1, r)
+    end
+end
+
+-- draw output
+local function showout(n,r,x,y)
+    tex.print("\\begin{tikzpicture}[radius="..r.."cm]")
+    tex.print("\\draw[red](0,0) rectangle ("..x..","..y..");")
+    for k,v in pairs(pts) do
+        tex.print("\\draw ("..pts[k][1]..","..pts[k][2]..") circle ;")
+    end
+    tex.print("\\end{tikzpicture}")
+end
+
+-- wrapper
+function circles(n,r,x,y)
+    genpts(n,x,y)
+    quickSort(pts)
+    getpairs(pts,r)
+    delpairs(r)
+    showout(n,r,x,y)
+end
+
+
+\end{luacode*}
+
+\def\circles#1#2#3#4{\directlua{circles(#1,#2,#3,#4)}}
+
+\begin{document}
+
+\circles{500}{.1}{10}{5}
+
+\end{document}
